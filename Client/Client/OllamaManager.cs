@@ -1,4 +1,5 @@
-﻿using OllamaSharp;
+﻿using OllamaInstaller;
+using OllamaSharp;
 
 namespace OllamaManager
 {
@@ -31,6 +32,28 @@ namespace OllamaManager
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
+            }
+        }
+
+        public static async Task<string> GenerateResponse(string model, string msg)
+        {
+            var generateRequest = new OllamaSharp.Models.GenerateRequest();
+            generateRequest.Model = model;
+            generateRequest.Prompt = msg;
+            generateRequest.Stream = false;
+            try
+            {
+                await foreach (var response in Ollama.GenerateAsync(generateRequest))
+                {
+                    ConsoleHelper.WriteGreen("[DONE] One request has been answered ");
+                    return response.Response;
+                }
+                return "";
+            }
+            catch (Exception e)
+            {
+                ConsoleHelper.WriteRed("[ERROR] " + e.Message);
+                return e.Message;
             }
         }
 

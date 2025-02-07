@@ -168,6 +168,27 @@ namespace User
                 )
             },
             {
+                "allocate",
+                new Command(
+                    "allocate",
+                    "allocate work to worker | args: message",
+                    async args =>
+                    {
+                        await SpinnerHelper.ExecuteWithSpinner(async () =>
+                        {
+                            if (args.Length < 1)
+                            {
+                                ConsoleHelper.WriteRed("[Error] The 'test' command requires two arguments: model and message.");
+                            }
+                            else
+                            {
+                                await SocketManager.SocketConnectionManager.AllocateWork(args[0]);
+                            }
+                        });
+                    }
+                )
+            },
+            {
                 "help",
                 new Command(
                     "help",

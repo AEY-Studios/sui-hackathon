@@ -117,7 +117,7 @@ namespace OllamaInstaller
                     {
                         if (isInstalled)
                         {
-                            ConsoleHelper.WriteYellow("[INFO] Ollama is isntalled but not running...");
+                            ConsoleHelper.WriteYellow("[INFO] Ollama is installed but not running...");
                             await StartOllamaProcess();
                         }
                     }

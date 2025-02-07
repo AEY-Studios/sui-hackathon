@@ -1,10 +1,13 @@
 ﻿using OllamaInstaller;
 using System.Diagnostics;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace SocketManager
 {
     public static class SocketConnectionManager
     {
+        //private const string SocketIoUrl = "https://sui-hackaton-server-q7utg.ondigitalocean.app";
         private const string SocketIoUrl = "http://localhost:3000";
         private static SocketIOClient.SocketIO? socket;
 
@@ -28,6 +31,14 @@ namespace SocketManager
             if (socket != null)
             {
                 await socket.EmitAsync("getWorkers");
+            }
+        }
+        
+        public static async Task AllocateWork(string message)
+        {
+            if (socket != null)
+            {
+                await socket.EmitAsync("allocateWork", message);
             }
         }
 
@@ -55,6 +66,49 @@ namespace SocketManager
                 {
                     ConsoleHelper.WriteYellow($"[DEBUG] Event received: {callback}");
                 });
+                socket.On("workAllocation", async (response) =>
+                {
+                    ConsoleHelper.WriteYellow($"[DEBUG] Work Allocation Event received: {response}");
+
+                    try
+                    {
+                        string jsonData = response.ToString(); // Biztosítjuk, hogy stringként kezeljük
+
+                        if (!string.IsNullOrWhiteSpace(jsonData))
+                        {
+                            Console.WriteLine(jsonData);
+                            var data = JsonConvert.DeserializeObject<dynamic>(jsonData);
+
+                            if (data is JArray array && array.Count > 0)
+                            {
+                                string model = array[0]["model"]?.ToString();
+                                string message = array[0]["message"]?.ToString();
+
+                                if (!string.IsNullOrEmpty(model) && !string.IsNullOrEmpty(message))
+                                {
+                                    await OllamaManager.Manager.GenerateResponse(model, message);
+                                }
+                                else
+                                {
+                                    ConsoleHelper.WriteRed("[ERROR] Invalid JSON structure: Missing 'model' or 'message'.");
+                                }
+                            }
+                            else
+                            {
+                                ConsoleHelper.WriteRed("[ERROR] JSON is not an array or is empty.");
+                            }
+                        }
+                        else
+                        {
+                            ConsoleHelper.WriteRed("[ERROR] Received empty JSON data.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleHelper.WriteRed($"[ERROR] Exception in workAllocation handler: {ex.Message}");
+                    }
+                });
+
                 socket.OnDisconnected += (sender, e) =>
                 {
                     ConsoleHelper.WriteRed("[EVENT] Disconnected from Socket.IO server.");
