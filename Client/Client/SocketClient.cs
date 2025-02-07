@@ -84,7 +84,6 @@ namespace SocketManager
                 };
 
                 socket.ConnectAsync();
-                ConsoleHelper.WriteGreen("[EVENT] Listening for messages...");
             }
             catch (Exception ex)
             {

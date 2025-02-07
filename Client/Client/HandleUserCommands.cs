@@ -139,7 +139,8 @@ namespace User
                             }
                             else
                             {
-                                await OllamaManager.Manager.LocalTest(args[0], args[1]);
+                                string message = string.Join(" ", args[1..]);
+                                await OllamaManager.Manager.LocalTest(args[0], message);
                             }
                         });
                     }
