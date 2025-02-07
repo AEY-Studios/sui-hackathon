@@ -4,11 +4,20 @@ namespace OllamaInstaller
 {
     public static class OllamaServiceManager
     {
-        public static async Task StartService(string ollamaPath)
+        private static async Task StartOllamaProcess()
         {
+            string ollamaPath = GetOllamaPath();
+
+            if (string.IsNullOrEmpty(ollamaPath))
+            {
+                ConsoleHelper.WriteRed("Ollama executable not found.");
+                return;
+            }
+            ConsoleHelper.WriteGreen("Ollama executable found: " + ollamaPath);
             var psi = new ProcessStartInfo
             {
                 FileName = ollamaPath,
+                Arguments = "",
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -24,7 +33,71 @@ namespace OllamaInstaller
             }
         }
 
-        public static async Task WaitForService(string url)
+        private static string GetOllamaPath()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "powershell",
+                    Arguments = "-Command \"(Get-Package -Name '*ollama*').FastPackageReference\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (var process = new Process { StartInfo = psi })
+                {
+                    process.Start();
+                    string output = process.StandardOutput.ReadToEnd().Trim();
+                    process.WaitForExit();
+
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        // Get the registry path from PowerShell output
+                        string uninstallRegPath = output.Replace("hkcu64\\", "HKCU:\\"); // Ensure correct PS format
+
+                        // Additional PowerShell command to query DisplayIcon (unins000.exe)
+                        var psi2 = new ProcessStartInfo
+                        {
+                            FileName = "powershell",
+                            Arguments = $"-Command \"(Get-ItemProperty '{uninstallRegPath}').DisplayIcon\"",
+                            RedirectStandardOutput = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+
+                        using (var process2 = new Process { StartInfo = psi2 })
+                        {
+                            process2.Start();
+                            string uninstallPath = process2.StandardOutput.ReadToEnd().Trim();
+                            process2.WaitForExit();
+
+                            if (!string.IsNullOrEmpty(uninstallPath))
+                            {
+                                // Extract the directory of the uninstall exe
+                                string installDir = Path.GetDirectoryName(uninstallPath);
+                                string ollamaExePath = Path.Combine(installDir, "ollama app.exe");
+
+                                // Check if ollama.exe exists
+                                if (File.Exists(ollamaExePath))
+                                {
+                                    return ollamaExePath;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ConsoleHelper.WriteRed("Error finding Ollama path: " + ex.Message);
+            }
+
+            return null;
+        }
+
+        public static async Task WaitForService(string url, bool isInstalled)
         {
             using (var httpClient = new HttpClient())
             {
@@ -42,12 +115,16 @@ namespace OllamaInstaller
                     }
                     catch
                     {
-                        // Ignore exceptions and continue retrying.
+                        if (isInstalled)
+                        {
+                            ConsoleHelper.WriteYellow("[INFO] Ollama is isntalled but not running...");
+                            await StartOllamaProcess();
+                        }
                     }
 
                     if (!warned && (DateTime.Now - startTime).TotalSeconds >= 30)
                     {
-                        ConsoleHelper.WriteYellow("Service is taking longer than usual...");
+                        ConsoleHelper.WriteYellow("[INFO] Service is taking longer than usual...");
                         warned = true;
                     }
                     await Task.Delay(1000);

@@ -10,7 +10,7 @@
         {
             if (!OperatingSystem.IsWindows())
             {
-                ConsoleHelper.WriteRed("This application can only run on Windows.");
+                ConsoleHelper.WriteRed("[Status] This application can only run on Windows.");
                 return;
             }
 
@@ -19,13 +19,18 @@
 
             if (!isInstalled)
             {
-                ConsoleHelper.WriteYellow("Downloading installer...");
+                ConsoleHelper.WriteYellow("[INFO] Downloading installer...");
                 await OllamaDownloader.DownloadFile(DownloadUrl, InstallerPath);
                 await OllamaInstaller.Install(InstallerPath);
             }
-
-            await OllamaServiceManager.WaitForService(ServiceUrl);
-            ConsoleHelper.WriteGreen("Ollama is ready!");
+            await OllamaServiceManager.WaitForService(ServiceUrl, isInstalled);
+            ConsoleHelper.WriteGreen("[OK] Ollama is ready!");
+            ConsoleHelper.WriteYellow("[INFO] Checking models!");
+            await OllamaManager.Manager.PullModelAsync("deepseek-r1:7b");
+            await OllamaManager.Manager.ListModelsAsync();
+            ConsoleHelper.WriteGreen("[OK] Deepseek is ready!");
+            await SocketManager.SocketConnectionManager.StartSocketClient();
+            await User.UserCommands.HandleUserCommands();
         }
     }
 }
