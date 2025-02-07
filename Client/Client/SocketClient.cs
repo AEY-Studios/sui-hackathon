@@ -80,7 +80,8 @@ namespace SocketManager
                 socket.OnPong += (sender, e) =>
                 {
                     stopwatch.Stop();
-                    ConsoleHelper.WriteGreen($"[STATUS] server ping: {stopwatch.ElapsedMilliseconds} ms");
+                    if (stopwatch.ElapsedMilliseconds > 500)
+                        ConsoleHelper.WriteYellow($"[WARNING] server ping is high: {stopwatch.ElapsedMilliseconds} ms");
                 };
 
                 socket.ConnectAsync();
