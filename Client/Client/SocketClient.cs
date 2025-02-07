@@ -7,8 +7,8 @@ namespace SocketManager
 {
     public static class SocketConnectionManager
     {
-        //private const string SocketIoUrl = "https://sui-hackaton-server-q7utg.ondigitalocean.app";
-        private const string SocketIoUrl = "http://localhost:3000";
+        private const string SocketIoUrl = "https://sui-hackaton-server-q7utg.ondigitalocean.app";
+        //private const string SocketIoUrl = "http://localhost:3000";
         private static SocketIOClient.SocketIO? socket;
 
         public static async Task StartSocketClient()
