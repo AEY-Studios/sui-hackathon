@@ -12,6 +12,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OllamaSharp" Version="5.0.6" />
     <PackageReference Include="SocketIOClient" Version="3.1.2" />
+    <PackageReference Include="Vanara.PInvoke.Kernel32" Version="4.0.5" />
+    <PackageReference Include="Vanara.PInvoke.SetupAPI" Version="4.0.5" />
   </ItemGroup>
 
 </Project>

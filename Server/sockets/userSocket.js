@@ -22,7 +22,7 @@ module.exports = (io, socket, workerManager) => {
         workerSocket = workerManager.getOneRandomAvailableWorkerWitoutMe(socket.id);
       }
       if (workerSocket) {
-        io.to(workerSocket.id).emit("workAllocation", {model:"deepseek-r1:7b", message: data.message, author: socket.id});
+        io.to(workerSocket.id).emit("workAllocation", {model:data.model, message: data.message, author: socket.id});
       } else {
         io.to(socket.id).emit("error", "No awailable machine!");
       }

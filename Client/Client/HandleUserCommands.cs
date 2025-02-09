@@ -46,6 +46,8 @@ namespace User
 
         [Option("includeme", Required = false, HelpText = "Allow assignment to my machine (default true)")]
         public bool? IncludeMe { get; set; }
+        [Option("model", Required = false, HelpText = "The model name.")]
+        public string Model { get; set; }
     }
 
     [Verb("help", HelpText = "Lists all available commands.")]
@@ -91,8 +93,13 @@ namespace User
             return matches.Cast<Match>().Select(m => m.Groups["arg"].Value).ToArray();
         }
 
-        public static async Task HandleUserCommandsAsync()
+        public static async Task HandleUserCommandsAsync(bool listCommands = false)
         {
+            if (listCommands)
+            {
+                await RunHelpCommand(new HelpOptions());
+            }
+
             while (true)
             {
                 Console.Write("> ");
@@ -174,9 +181,10 @@ namespace User
             await SpinnerHelper.ExecuteWithSpinner(async () =>
             {
                 string message = string.Join(" ", opts.MessageParts);
+                string model = string.Join(" ", opts.Model);
                 bool includeMe = opts.IncludeMe ?? true; 
 
-                await SocketManager.SocketConnectionManager.AllocateWork(message, includeMe);
+                await SocketManager.SocketConnectionManager.AllocateWork(message, includeMe, model);
             });
         }
 
@@ -189,7 +197,7 @@ namespace User
             ConsoleHelper.WriteGreen("- models: Lists available models.");
             ConsoleHelper.WriteGreen("- test: Runs a local test. Arguments: --model <model> --message <message>.");
             ConsoleHelper.WriteGreen("- pull: Pulls a model. Argument: --model <model>.");
-            ConsoleHelper.WriteGreen("- allocate: Allocates work to a worker. Argument: --message <message>.");
+            ConsoleHelper.WriteGreen("- allocate: Allocates work to a worker. Argument: --message <message> (optional: --includeMe <true> --model <model>)");
             ConsoleHelper.WriteGreen("- help: Lists all available commands.");
             await Task.CompletedTask;
         }

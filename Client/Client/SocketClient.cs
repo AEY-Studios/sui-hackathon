@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OllamaSharp.Models.Chat;
+using OllamaSharp.Models;
 
 namespace SocketManager
 {
@@ -34,11 +36,11 @@ namespace SocketManager
             }
         }
         
-        public static async Task AllocateWork(string message, bool includeMe = true)
+        public static async Task AllocateWork(string message, bool includeMe = true, string model="deepseek-r1:7b")
         {
             if (socket != null)
             {
-                await socket.EmitAsync("allocateWork", new[] { JsonConvert.SerializeObject(new { message, includeMe }) });
+                await socket.EmitAsync("allocateWork", new[] { JsonConvert.SerializeObject(new { message, includeMe, model }) });
             }
         }
 
@@ -70,32 +72,76 @@ namespace SocketManager
                 {
                     ConsoleHelper.WriteRed($"[DEBUG] ERROR received: {callback}");
                 });
-                socket.On("completeWork", (callback) =>
+                socket.On("completeWork", (response) =>
                 {
-                    ConsoleHelper.WriteYellow($"[DEBUG] Event received: {callback}");
-                });
-                socket.On("workAllocation", async (response) =>
-                {
-                    ConsoleHelper.WriteYellow($"[DEBUG] Work Allocation Event received: {response}");
-
                     try
                     {
                         string jsonData = response.ToString(); // Biztosítjuk, hogy stringként kezeljük
 
                         if (!string.IsNullOrWhiteSpace(jsonData))
                         {
-                            Console.WriteLine(jsonData);
+                            var data = JsonConvert.DeserializeObject<dynamic>(jsonData);
+
+                            if (data is JArray array && array.Count > 0)
+                            {
+                                string message = array[0]?.ToString();
+
+                                if (!string.IsNullOrEmpty(message))
+                                {
+                                    ConsoleHelper.WriteGreen("[RECIVED] " + message);
+                                }
+                                else
+                                {
+                                    ConsoleHelper.WriteRed("[ERROR] Invalid JSON structure: Missing 'model' or 'message'.");
+                                }
+                            }
+                            else
+                            {
+                                ConsoleHelper.WriteRed("[ERROR] JSON is not an array or is empty.");
+                            }
+                        }
+                        else
+                        {
+                            ConsoleHelper.WriteRed("[ERROR] Received empty JSON data.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleHelper.WriteRed($"[ERROR] Exception in workAllocation handler: {ex.Message}");
+                    }
+                });
+                socket.On("workAllocation", async (response) =>
+                {
+                    try
+                    {
+                        string jsonData = response.ToString(); // Biztosítjuk, hogy stringként kezeljük
+
+                        if (!string.IsNullOrWhiteSpace(jsonData))
+                        {
                             var data = JsonConvert.DeserializeObject<dynamic>(jsonData);
 
                             if (data is JArray array && array.Count > 0)
                             {
                                 string model = array[0]["model"]?.ToString();
-                                string message = array[0]["message"]?.ToString();
+                                string inputMessage = array[0]["message"]?.ToString();
                                 string author = array[0]["author"]?.ToString();
 
-                                if (!string.IsNullOrEmpty(model) && !string.IsNullOrEmpty(message))
+                                ConsoleHelper.WriteYellow("[MODEL] " + model);
+                                string MaskString(string input)
                                 {
-                                    string msg = await OllamaManager.Manager.GenerateResponse(model, message);
+                                    if (input.Length <= 4)
+                                        return input; 
+
+                                    return input.Substring(0, 4) + new string('*', input.Length - 4);
+                                }
+
+                                ConsoleHelper.WriteYellow("[INPUT] " + MaskString(inputMessage));
+
+                                ConsoleHelper.WriteYellow("[AUITHOR] " + author);
+
+                                if (!string.IsNullOrEmpty(model) && !string.IsNullOrEmpty(inputMessage))
+                                {
+                                    string message = await OllamaManager.Manager.GenerateResponse(model, inputMessage);
                                     await socket.EmitAsync("completeWork", new[] { JsonConvert.SerializeObject(new { message, author }) });
                                     ConsoleHelper.WriteGreen("[INFO] The request delivered to the user.");
                                 }

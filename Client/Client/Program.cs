@@ -1,4 +1,5 @@
-﻿using User;
+﻿using HardwareDetection;
+using User;
 
 namespace OllamaInstaller
 {
@@ -10,12 +11,19 @@ namespace OllamaInstaller
 
         static async Task Main(string[] args)
         {
+            ConsoleHelper.DrawnLogo();
             if (!OperatingSystem.IsWindows())
             {
                 ConsoleHelper.WriteRed("[Status] This application can only run on Windows.");
                 return;
             }
-
+            ConsoleHelper.WriteYellow("[SEARCH] Search for Graphics processing unit...");
+            if (!DisplayAdapterDetector.DetectHardware()){
+                ConsoleHelper.WriteYellow("[INFO] Process terminated...");
+                ConsoleHelper.WriteYellow("[ERROR] No dedicated Graphics processing unit can be defined!");
+                await User.UserCommands.HandleUserCommandsAsync();
+            }
+            ConsoleHelper.WriteGreen("[OK] GPU detected!");
             ConsoleHelper.WriteYellow("[SEARCH] Checking if Ollama is installed...");
             bool isInstalled = await OllamaInstallerChecker.IsInstalled();
 
@@ -28,11 +36,19 @@ namespace OllamaInstaller
             await OllamaServiceManager.WaitForService(ServiceUrl, isInstalled);
             ConsoleHelper.WriteGreen("[OK] Ollama is ready!");
             ConsoleHelper.WriteYellow("[INFO] Checking models!");
-            await OllamaManager.Manager.PullModelAsync("deepseek-r1:7b");
-            await OllamaManager.Manager.ListModelsAsync();
-            ConsoleHelper.WriteGreen("[OK] Deepseek is ready!");
+            await InstallModels();
+            ConsoleHelper.WriteGreen("[OK] Models are ready!");
             await SocketManager.SocketConnectionManager.StartSocketClient();
-            await User.UserCommands.HandleUserCommandsAsync();
+            
+            await User.UserCommands.HandleUserCommandsAsync(true);
+        }
+        public static async Task InstallModels()
+        {
+            await OllamaManager.Manager.PullModelAsync("deepseek-r1:7b");
+            ConsoleHelper.WriteGreen("[OK] Deepseek is ready!");
+            await OllamaManager.Manager.PullModelAsync("llama3.2");
+            ConsoleHelper.WriteGreen("[OK] Llama3 is ready!");
+            await OllamaManager.Manager.ListModelsAsync();
         }
     }
 }
