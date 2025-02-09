@@ -38,6 +38,10 @@ namespace SocketManager
         
         public static async Task AllocateWork(string message, bool includeMe = true, string model="deepseek-r1:7b")
         {
+            if(model.Length < 3)
+            {
+                model = "deepseek-r1:7b";
+            }
             if (socket != null)
             {
                 await socket.EmitAsync("allocateWork", new[] { JsonConvert.SerializeObject(new { message, includeMe, model }) });
