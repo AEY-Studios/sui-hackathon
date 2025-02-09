@@ -1,5 +1,6 @@
 ﻿using OllamaInstaller;
 using OllamaSharp;
+using System.Text.RegularExpressions;
 
 namespace OllamaManager
 {
@@ -45,7 +46,8 @@ namespace OllamaManager
             {
                 await foreach (var response in Ollama.GenerateAsync(generateRequest))
                 {
-                    ConsoleHelper.WriteGreen("[DONE] One request has been answered ");
+                    ConsoleHelper.WriteGreen("[DONE] One request has been answered. | Input token: " + EstimateTokens(msg, model) + " | Response token: " + EstimateTokens(response.Response, model));
+                    ConsoleHelper.WriteGreen("[EARNED] Gained reward: " + (EstimateTokens(msg, model) + EstimateTokens(response.Response, model)) * 0.025f);
                     return response.Response;
                 }
                 return "";
@@ -70,6 +72,27 @@ namespace OllamaManager
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
+            }
+        }
+
+        public static int EstimateTokens(string text, string modelType)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return 0;
+
+            string[] words = Regex.Split(text, @"\s+|(?=[.,!?;])|(?<=[.,!?;])");
+
+            if (modelType.Contains("llama"))
+            {
+                return (int)(words.Length * 1.2);
+            }
+            else if (modelType.Contains("deepseek"))
+            {
+                return (int)(words.Length * 1.15);
+            }
+            else
+            {
+                return (int)(words.Length * 3);
             }
         }
     }

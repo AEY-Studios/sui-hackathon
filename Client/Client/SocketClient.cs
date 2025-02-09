@@ -34,11 +34,11 @@ namespace SocketManager
             }
         }
         
-        public static async Task AllocateWork(string message)
+        public static async Task AllocateWork(string message, bool includeMe = true)
         {
             if (socket != null)
             {
-                await socket.EmitAsync("allocateWork", message);
+                await socket.EmitAsync("allocateWork", new[] { JsonConvert.SerializeObject(new { message, includeMe }) });
             }
         }
 
@@ -66,6 +66,14 @@ namespace SocketManager
                 {
                     ConsoleHelper.WriteYellow($"[DEBUG] Event received: {callback}");
                 });
+                socket.On("error", (callback) =>
+                {
+                    ConsoleHelper.WriteRed($"[DEBUG] ERROR received: {callback}");
+                });
+                socket.On("completeWork", (callback) =>
+                {
+                    ConsoleHelper.WriteYellow($"[DEBUG] Event received: {callback}");
+                });
                 socket.On("workAllocation", async (response) =>
                 {
                     ConsoleHelper.WriteYellow($"[DEBUG] Work Allocation Event received: {response}");
@@ -83,10 +91,13 @@ namespace SocketManager
                             {
                                 string model = array[0]["model"]?.ToString();
                                 string message = array[0]["message"]?.ToString();
+                                string author = array[0]["author"]?.ToString();
 
                                 if (!string.IsNullOrEmpty(model) && !string.IsNullOrEmpty(message))
                                 {
-                                    await OllamaManager.Manager.GenerateResponse(model, message);
+                                    string msg = await OllamaManager.Manager.GenerateResponse(model, message);
+                                    await socket.EmitAsync("completeWork", new[] { JsonConvert.SerializeObject(new { message, author }) });
+                                    ConsoleHelper.WriteGreen("[INFO] The request delivered to the user.");
                                 }
                                 else
                                 {

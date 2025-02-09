@@ -10,6 +10,12 @@ class WorkerManager {
     getAvailableWorkers() {
         return this.workers.filter(worker => worker.available);
     }
+    getOneRandomAvailableWorkerWitoutMe(excludedId) {
+        const availableWorkers = this.getAvailableWorkers().filter(worker => worker.id !== excludedId);
+        if (availableWorkers.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * availableWorkers.length);
+        return availableWorkers[randomIndex];
+    }
 
     getOneRandomAvailableWorker() {
         const availableWorkers = this.getAvailableWorkers();

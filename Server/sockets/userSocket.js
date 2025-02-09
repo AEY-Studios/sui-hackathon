@@ -11,15 +11,32 @@ module.exports = (io, socket, workerManager) => {
       io.to(room).emit("roomMessage", { message: `${socket.id} has joined the room.` });
     });
     
-    socket.on("allocateWork", (data) => {
-        console.log("allocation Request: " + data)
-        const workerSocket = workerManager.getOneRandomAvailableWorker();
-        if (workerSocket) {
-            io.to(workerSocket.id).emit("workAllocation", {model:"deepseek-r1:7b", message: data});
-          } else {
-            console.error(`Worker with ID ${workerId} not found.`);
-          }
+    socket.on("allocateWork", (raw) => {
+      const data = JSON.parse(raw);
+      let workerSocket
+      console.log(data)
+      if(data.includeMe){
+        workerSocket = workerManager.getOneRandomAvailableWorker();
+      } 
+      else{
+        workerSocket = workerManager.getOneRandomAvailableWorkerWitoutMe(socket.id);
+      }
+      if (workerSocket) {
+        io.to(workerSocket.id).emit("workAllocation", {model:"deepseek-r1:7b", message: data.message, author: socket.id});
+      } else {
+        io.to(socket.id).emit("error", "No awailable machine!");
+      }
     });
+
+    socket.on("completeWork", (raw) => {
+      console.log("completeWork Request: " + raw)
+      const data = JSON.parse(raw);
+      if (data.author) {
+          io.to(data.author).emit("completeWork", data.message);
+        } else {
+          console.error(`Worker with ID ${workerId} not found.`);
+        }
+  });
 
     socket.on("getWorkers", () => {
         console.log(workerManager.getAvailableWorkers())

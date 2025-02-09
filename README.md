@@ -69,6 +69,20 @@ To set up and run the project locally, follow the instructions below.
    npm start
    ```
 
+# Command-Line Interface (CLI)
+
+The server includes a command-line interface (CLI) to manage various functionalities. The available commands are:
+
+- **`exit`**: Stops the application.
+- **`status`**: Prints the current socket status.
+- **`workers`**: Lists all workers.
+- **`models`**: Lists available models.
+- **`test --model <model> --message <message>`**: Runs a local test with a specified model.
+- **`pull --model <model>`**: Pulls a model.
+- **`allocate --message <message> --includeme <bool>`**: Allocates work to a worker.
+- **`help`**: Lists all available commands.
+
+
 ## Contributing
 
 We welcome contributions to enhance this project. To contribute:

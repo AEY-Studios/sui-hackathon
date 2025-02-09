@@ -1,4 +1,6 @@
-﻿namespace OllamaInstaller
+﻿using User;
+
+namespace OllamaInstaller
 {
     class Program
     {
@@ -30,7 +32,7 @@
             await OllamaManager.Manager.ListModelsAsync();
             ConsoleHelper.WriteGreen("[OK] Deepseek is ready!");
             await SocketManager.SocketConnectionManager.StartSocketClient();
-            await User.UserCommands.HandleUserCommands();
+            await User.UserCommands.HandleUserCommandsAsync();
         }
     }
 }
